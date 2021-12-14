@@ -206,6 +206,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if config.PersistDiff {
 		bcOps = append(bcOps, core.EnablePersistDiff(config.DiffBlock))
 	}
+
 	eth.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, chainConfig, eth.engine, vmConfig, eth.shouldPreserve, &config.TxLookupLimit, bcOps...)
 	if err != nil {
 		return nil, err
@@ -287,6 +288,9 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 				"age", common.PrettyAge(t))
 		}
 	}
+
+	eth.blockchain.ProxyFetcher = downloader.NewProxyFetcher(eth.handler.downloader, config.NetworkId == 56)
+
 	return eth, nil
 }
 

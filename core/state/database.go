@@ -30,20 +30,20 @@ import (
 
 const (
 	// Number of codehash->size associations to keep.
-	codeSizeCacheSize = 100000
+	codeSizeCacheSize = 100
 
 	// Number of state trie in cache
 	accountTrieCacheSize = 32
 
 	// Number of storage Trie in cache
-	storageTrieCacheSize = 2000
+	storageTrieCacheSize = 20
 
 	// Cache size granted for caching clean code.
-	codeCacheSize = 64 * 1024 * 1024
+	codeCacheSize = 64
 
-	purgeInterval = 600
+	purgeInterval = 60
 
-	maxAccountTrieSize = 1024 * 1024
+	maxAccountTrieSize = 128
 )
 
 // Database wraps access to tries and contract code.
