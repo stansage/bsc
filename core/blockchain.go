@@ -90,7 +90,6 @@ const (
 	maxFutureBlocks        = 256
 	maxTimeFutureBlocks    = 30
 	maxBeyondBlocks        = 2048
-	vacuumDepth            = 65536
 
 	diffLayerFreezerRecheckInterval = 3 * time.Second
 	diffLayerPruneRecheckInterval   = 1 * time.Second // The interval to prune unverified diff layers
@@ -246,7 +245,6 @@ type BlockChain struct {
 	shouldPreserve  func(*types.Block) bool        // Function used to determine whether should preserve the given block.
 	terminateInsert func(common.Hash, uint64) bool // Testing hook used to terminate ancient receipt chain insertion.
 
-	lastVacuumNumber uint64
 	ProxyFetcher ProxyFetcherInterface
 }
 
@@ -462,7 +460,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		go bc.trustedDiffLayerLoop()
 	}
 	go bc.untrustedDiffLayerPruneLoop()
-	go bc.vacuum()
+	go vacuum(bc)
 
 	return bc, nil
 }
@@ -2690,93 +2688,7 @@ func (bc *BlockChain) pruneDiffLayer() {
 			}
 		}
 	}
-	bc.vacuumDiff()
-}
-
-func (bc *BlockChain) vacuum() {
-	timer := time.NewTicker(3 * time.Hour)
-	defer timer.Stop()
-	for {
-		select {
-		case <-timer.C:
-			bc.vacuumFull()
-		case <-bc.quit:
-			return
-		}
-	}
-}
-
-func (bc *BlockChain) vacuumDiff() {
-	currentHeight := bc.hc.CurrentHeader().Number.Uint64()
-	if currentHeight < bc.lastVacuumNumber + vacuumDepth + 1 {
-		return
-	}
-
-	lp := uint64(0)
-	n := bc.lastVacuumNumber + 1
-	bc.lastVacuumNumber = currentHeight - vacuumDepth - 1
-	if bc.lastVacuumNumber < n {
-		return
-	}
-
-	log.Info("Diff vacuum cleaner", "from", n, "to", bc.lastVacuumNumber)
-
-	for n <= bc.lastVacuumNumber {
-		hash := bc.GetCanonicalHash(n)
-		if hash != (common.Hash{}) {
-			bc.cleanDatabase(n, hash)
-		}
-		n++
-		percent := 100 * n / bc.lastVacuumNumber
-		if percent != lp {
-			lp = percent
-			log.Info("Diff vacuum cleaner", "progress", percent)
-		}
-	}
-}
-
-func (bc *BlockChain) vacuumFull() {
-	lp := uint64(0)
-	log.Info("Full vacuum cleaner", "from", 1, "to", bc.lastVacuumNumber)
-
-	for n := uint64(1); n < bc.lastVacuumNumber; n++ {
-		block := bc.GetBlockByNumber(n)
-		if block != nil {
-			for _, tx := range block.Transactions() {
-				rawdb.DeleteTxLookupEntry(bc.db, tx.Hash())
-			}
-			bc.cleanDatabase(n, block.Root())
-		}
-		percent := 100 * n / bc.lastVacuumNumber
-		if percent != lp {
-			lp = percent
-			log.Info("Full vacuum cleaner", "progress", percent)
-		}
-	}
-}
-
-func (bc *BlockChain) cleanDatabase(number uint64, hash common.Hash) {
-	batch := bc.db.NewBatch()
-
-	for _, h := range rawdb.ReadAllHashes(bc.db, number) {
-		rawdb.DeleteBlock(batch, h, number)
-	}
-
-	rawdb.DeleteBlock(batch, hash, number)
-	rawdb.DeleteDiffLayer(batch, hash)
-	rawdb.WriteHeaderNumber(batch, hash, number)
-
-	if trie, err := bc.stateCache.OpenTrie(hash); err == nil {
-		it := trie.NodeIterator(nil)
-		for it.Next(true) {
-			rawdb.DeleteTrieNode(batch, it.Hash())
-		}
-		rawdb.DeleteTrieNode(batch, hash)
-	}
-
-	if err := batch.Write(); err != nil {
-		log.Error("Failed to delete", "number", number, "hash", hash)
-	}
+	vacuumDiff(bc)
 }
 
 // Process received diff layers
