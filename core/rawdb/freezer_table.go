@@ -410,7 +410,7 @@ func (t *freezerTable) Prune(number uint64) error {
 	expected.unmarshalBinary(buffer)
 
 	if expected.filenum != t.headId && expected.filenum > 1 {
-		if f, exist := t.files[expected.filenum-1]; exist {
+		if f, exist := t.files[expected.filenum-2]; exist {
 			fname := f.Name()
 			t.releaseFile(expected.filenum)
 			os.Remove(fname)
