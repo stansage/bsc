@@ -409,11 +409,16 @@ func (t *freezerTable) Prune(number uint64) error {
 	var expected indexEntry
 	expected.unmarshalBinary(buffer)
 
-	if expected.filenum != t.headId && expected.filenum > 1 {
-		if f, exist := t.files[expected.filenum-2]; exist {
-			fname := f.Name()
-			t.releaseFile(expected.filenum)
-			os.Remove(fname)
+	if expected.filenum != t.headId {
+		for fnum := expected.filenum; fnum > 1; fnum-- {
+			if f, exist := t.files[fnum]; exist {
+				if pos, err := f.Seek(0, io.SeekCurrent); err != nil || pos != 0 {
+					fname := f.Name()
+					t.releaseFile(fnum)
+					os.Remove(fname)
+					t.openFile(fnum, openFreezerFileForReadOnly)
+				}
+			}
 		}
 	}
 
