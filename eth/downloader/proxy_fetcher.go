@@ -2,9 +2,11 @@ package downloader
 
 import (
 	"fmt"
+	"time"
 	"strings"
 	"net/http"
 	"io/ioutil"
+	"math/rand"
 	"encoding/json"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/common"
@@ -56,6 +58,8 @@ func NewProxyFetcher(d *Downloader, isMainnet bool) ProxyFetcher {
 		}
 	}
 
+	rand.Seed(time.Now().UnixNano())
+
 	return pf
 }
 
@@ -66,34 +70,29 @@ func (pf ProxyFetcher) GetHeaderByHash(hash common.Hash) *types.Header {
 	)
 
 	for {
-		for _, url := range pf.urls {
-			id++
-			msg := fmt.Sprintf(`{"jsonrpc":"2.0", "method":"eth_getBlockByHash", "params":[%q,true], "id":%d}`, hash, id)
-			req, err := http.NewRequest("POST", url, strings.NewReader(msg))
-			if err != nil {
-				continue
-			}
-			req.Header.Set("Content-Type", "application/json")
-			
-			resp, err := pf.client.Do(req)
-			if err != nil {
-				continue
-			}
-
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				continue
-			}
-
-			res := new(getBlockByHashResponse)
-			err = json.Unmarshal(body, res)
-			if err == nil && res.Error == nil && res.Result != nil {
-				header = res.Result
-				break
-			}
+		id++
+		url := pf.urls[rand.Intn(len(pf.urls))]
+		msg := fmt.Sprintf(`{"jsonrpc":"2.0", "method":"eth_getBlockByHash", "params":[%q,true], "id":%d}`, hash, id)
+		req, err := http.NewRequest("POST", url, strings.NewReader(msg))
+		if err != nil {
+			continue
+		}
+		req.Header.Set("Content-Type", "application/json")
+		
+		resp, err := pf.client.Do(req)
+		if err != nil {
+			continue
 		}
 
-		if header != nil {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			continue
+		}
+
+		res := new(getBlockByHashResponse)
+		err = json.Unmarshal(body, res)
+		if err == nil && res.Error == nil && res.Result != nil {
+			header = res.Result
 			break
 		}
 	}
@@ -112,7 +111,7 @@ func (pf ProxyFetcher) GetHeader(db ethdb.Database, number uint64) *types.Header
 	}
 
 	header = pf.GetHeaderByHash(hash)
-    rawdb.WriteHeader(db, header)
+	rawdb.WriteHeader(db, header)
 
 	return header
 }

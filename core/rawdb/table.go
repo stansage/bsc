@@ -86,6 +86,12 @@ func (t *table) TruncateAncients(items uint64) error {
 	return t.db.TruncateAncients(items)
 }
 
+// PruneAncient is a noop passthrough that just forwards the request to the underlying
+// database.
+func (t *table) PruneAncient(number uint64) error {
+	return t.db.PruneAncient(number)
+}
+
 // Sync is a noop passthrough that just forwards the request to the underlying
 // database.
 func (t *table) Sync() error {

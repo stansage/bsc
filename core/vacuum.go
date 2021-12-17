@@ -16,14 +16,24 @@ const vacuumDepth = 65536
 var lastVacuumNumber uint64
 
 func vacuum(bc *BlockChain) {
-	timer := time.NewTicker(3 * time.Hour)
-	defer timer.Stop()
+	timer1 := time.NewTicker(3 * time.Minute)
+	timer2 := time.NewTicker(3 * time.Hour)
+	bc.wg.Add(1)
+	defer func() {
+		bc.wg.Done()
+		timer1.Stop()
+		timer2.Stop()
+	}()
 	for {
 		select {
-		case <-timer.C:
-			vacuumFull(bc)
 		case <-bc.quit:
 			return
+		case <-timer1.C:
+			vacuumDiff(bc)
+			continue
+		case <-timer2.C:
+			vacuumFull(bc)
+			continue
 		}
 	}
 }
@@ -121,4 +131,6 @@ func cleanDatabase(bc *BlockChain, number uint64, hash common.Hash) {
 	if err := batch.Write(); err != nil {
 		log.Error("Failed to delete", "number", number, "hash", hash)
 	}
+
+	bc.db.PruneAncient(number)
 }

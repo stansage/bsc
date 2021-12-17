@@ -108,9 +108,9 @@ func NewFreezerTable(path, name string, disableSnappy bool) (*freezerTable, erro
 	return newTable(path, name, metrics.NilMeter{}, metrics.NilMeter{}, metrics.NilGauge{}, disableSnappy)
 }
 
-// newTable opens a freezer table with default settings - 2G files
+// newTable opens a freezer table with default settings - 1G files
 func newTable(path string, name string, readMeter metrics.Meter, writeMeter metrics.Meter, sizeGauge metrics.Gauge, disableSnappy bool) (*freezerTable, error) {
-	return newCustomTable(path, name, readMeter, writeMeter, sizeGauge, 2*1000*1000*1000, disableSnappy)
+	return newCustomTable(path, name, readMeter, writeMeter, sizeGauge, 1*1000*1000*1000, disableSnappy)
 }
 
 // openFreezerFileForAppend opens a freezer table file and seeks to the end
@@ -389,6 +389,31 @@ func (t *freezerTable) truncate(items uint64) error {
 		return err
 	}
 	t.sizeGauge.Dec(int64(oldSize - newSize))
+
+	return nil
+}
+
+
+func (t *freezerTable) Prune(number uint64) error {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	if atomic.LoadUint64(&t.items) <= number {
+		return nil
+	}
+
+	buffer := make([]byte, indexEntrySize)
+	if _, err := t.index.ReadAt(buffer, int64(number*indexEntrySize)); err != nil {
+		return err
+	}
+	var expected indexEntry
+	expected.unmarshalBinary(buffer)
+
+	if expected.filenum != t.headId {
+		if f, exist := t.files[expected.filenum]; exist {
+			truncateFreezerFile(f, 0)
+		}
+	}
 
 	return nil
 }

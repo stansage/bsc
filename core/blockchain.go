@@ -2688,7 +2688,6 @@ func (bc *BlockChain) pruneDiffLayer() {
 			}
 		}
 	}
-	vacuumDiff(bc)
 }
 
 // Process received diff layers

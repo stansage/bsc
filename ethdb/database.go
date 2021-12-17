@@ -92,6 +92,9 @@ type AncientWriter interface {
 	// TruncateAncients discards all but the first n ancient data from the ancient store.
 	TruncateAncients(n uint64) error
 
+	// PruneAncient discards ancient by number
+	PruneAncient(number uint64) error
+
 	// Sync flushes all in-memory ancient store data to disk.
 	Sync() error
 }

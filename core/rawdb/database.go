@@ -127,6 +127,10 @@ func (db *nofreezedb) TruncateAncients(items uint64) error {
 	return errNotSupported
 }
 
+func (f *nofreezedb) PruneAncient(number uint64) error {
+	return errNotSupported
+}
+
 // Sync returns an error as we don't have a backing chain freezer.
 func (db *nofreezedb) Sync() error {
 	return errNotSupported

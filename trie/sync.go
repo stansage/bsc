@@ -311,14 +311,14 @@ func (s *Sync) Process(result SyncResult) error {
 // storage, returning any occurred error.
 func (s *Sync) Commit(dbw ethdb.Batch) error {
 	// Dump the membatch into a database dbw
-	for key, value := range s.membatch.nodes {
-		rawdb.WriteTrieNode(dbw, key, value)
+	for key, _ := range s.membatch.nodes {
+		// rawdb.WriteTrieNode(dbw, key, value)
 		if s.bloom != nil {
 			s.bloom.Add(key[:])
 		}
 	}
-	for key, value := range s.membatch.codes {
-		rawdb.WriteCode(dbw, key, value)
+	for key, _ := range s.membatch.codes {
+		// rawdb.WriteCode(dbw, key, value)
 		if s.bloom != nil {
 			s.bloom.Add(key[:])
 		}
