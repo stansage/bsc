@@ -110,7 +110,7 @@ func NewFreezerTable(path, name string, disableSnappy bool) (*freezerTable, erro
 
 // newTable opens a freezer table with default settings - 1G files
 func newTable(path string, name string, readMeter metrics.Meter, writeMeter metrics.Meter, sizeGauge metrics.Gauge, disableSnappy bool) (*freezerTable, error) {
-	return newCustomTable(path, name, readMeter, writeMeter, sizeGauge, 1*1000*1000*1000, disableSnappy)
+	return newCustomTable(path, name, readMeter, writeMeter, sizeGauge, 2*1000*1000*1000, disableSnappy)
 }
 
 // openFreezerFileForAppend opens a freezer table file and seeks to the end
