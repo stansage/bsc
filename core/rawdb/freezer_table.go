@@ -398,28 +398,24 @@ func (t *freezerTable) Prune(number uint64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	if atomic.LoadUint64(&t.items) <= number {
+	if atomic.LoadUint64(&t.items) <= number || t.headId < 2 {
 		return nil
 	}
 
-	buffer := make([]byte, indexEntrySize)
-	if _, err := t.index.ReadAt(buffer, int64(number*indexEntrySize)); err != nil {
-		return err
-	}
-	var expected indexEntry
-	expected.unmarshalBinary(buffer)
-
-	if expected.filenum != t.headId {
-		for fnum := expected.filenum; fnum > 1; fnum-- {
-			if f, exist := t.files[fnum]; exist {
-				if pos, err := f.Seek(0, io.SeekCurrent); err != nil || pos != 0 {
-					fname := f.Name()
-					t.releaseFile(fnum)
-					os.Remove(fname)
-					t.openFile(fnum, openFreezerFileForReadOnly)
-				}
-			}
+	for fnum := uint32(0); fnum < t.headId - 2; fnum++ {
+		file, exist := t.files[fnum]
+		if !exist {
+			continue
 		}
+
+		pos, err := file.Seek(0, io.SeekCurrent);
+		if err != nil || pos == 0 {
+			continue
+		}
+
+		t.releaseFile(fnum)
+		os.Remove(file.Name())
+		t.openFile(fnum, openFreezerFileForReadOnly)
 	}
 
 	return nil
