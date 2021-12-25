@@ -71,6 +71,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		Checkpoint              *params.TrustedCheckpoint      `toml:",omitempty"`
 		CheckpointOracle        *params.CheckpointOracleConfig `toml:",omitempty"`
 		OverrideBerlin          *big.Int                       `toml:",omitempty"`
+		ProxyFetcherURLs        []string
 	}
 	var enc Config
 	enc.Genesis = c.Genesis
@@ -80,6 +81,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.EthDiscoveryURLs = c.EthDiscoveryURLs
 	enc.SnapDiscoveryURLs = c.SnapDiscoveryURLs
 	enc.NoPruning = c.NoPruning
+	enc.NoPrefetch = c.NoPrefetch
 	enc.DirectBroadcast = c.DirectBroadcast
 	enc.DisableSnapProtocol = c.DisableSnapProtocol
 	enc.DiffSync = c.DiffSync
@@ -125,6 +127,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.Checkpoint = c.Checkpoint
 	enc.CheckpointOracle = c.CheckpointOracle
 	enc.OverrideBerlin = c.OverrideBerlin
+	enc.ProxyFetcherURLs = c.ProxyFetcherURLs
 	return &enc, nil
 }
 
@@ -184,6 +187,7 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		Checkpoint              *params.TrustedCheckpoint      `toml:",omitempty"`
 		CheckpointOracle        *params.CheckpointOracleConfig `toml:",omitempty"`
 		OverrideBerlin          *big.Int                       `toml:",omitempty"`
+		ProxyFetcherURLs        []string
 	}
 	var dec Config
 	if err := unmarshal(&dec); err != nil {
@@ -209,6 +213,9 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	}
 	if dec.NoPruning != nil {
 		c.NoPruning = *dec.NoPruning
+	}
+	if dec.NoPrefetch != nil {
+		c.NoPrefetch = *dec.NoPrefetch
 	}
 	if dec.DirectBroadcast != nil {
 		c.DirectBroadcast = *dec.DirectBroadcast
@@ -344,6 +351,9 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	}
 	if dec.OverrideBerlin != nil {
 		c.OverrideBerlin = dec.OverrideBerlin
+	}
+	if dec.ProxyFetcherURLs != nil {
+		c.ProxyFetcherURLs = dec.ProxyFetcherURLs
 	}
 	return nil
 }

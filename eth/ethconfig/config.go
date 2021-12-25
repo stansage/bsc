@@ -135,6 +135,7 @@ type Config struct {
 	SnapDiscoveryURLs []string
 
 	NoPruning           bool // Whether to disable pruning and flush everything to disk
+	NoPrefetch          bool
 	DirectBroadcast     bool
 	DisableSnapProtocol bool //Whether disable snap protocol
 	DiffSync            bool // Whether support diff sync
