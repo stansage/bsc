@@ -217,6 +217,9 @@ type Config struct {
 
 	// Berlin block override (TODO: remove after the fork)
 	OverrideBerlin *big.Int `toml:",omitempty"`
+
+	// Proxy fetcher URLs is a external RPC services for downloader
+	ProxyFetcherURLs []string
 }
 
 // CreateConsensusEngine creates a consensus engine for the given chain configuration.

@@ -289,7 +289,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		}
 	}
 
-	eth.blockchain.ProxyFetcher = downloader.NewProxyFetcher(eth.handler.downloader, config.NetworkId == 56)
+	eth.blockchain.ProxyFetcher = downloader.NewProxyFetcher(eth.handler.downloader, config.ProxyFetcherURLs)
 
 	return eth, nil
 }

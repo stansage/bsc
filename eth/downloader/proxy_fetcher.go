@@ -28,39 +28,9 @@ type getBlockByHashResponse struct {
 	Id         uint64           `json:"id"`
 }
 
-func NewProxyFetcher(d *Downloader, isMainnet bool) ProxyFetcher {
-	pf := ProxyFetcher{d, nil, new(http.Client)}
-
-	if isMainnet {
-		pf.urls = []string{
-			"https://bsc-dataseed.binance.org",
-			"https://bsc-dataseed1.defibit.io",
-			"https://bsc-dataseed1.ninicoin.io",
-			"https://bsc-dataseed2.defibit.io",
-			"https://bsc-dataseed3.defibit.io",
-			"https://bsc-dataseed4.defibit.io",
-			"https://bsc-dataseed2.ninicoin.io",
-			"https://bsc-dataseed3.ninicoin.io",
-			"https://bsc-dataseed4.ninicoin.io",
-			"https://bsc-dataseed1.binance.org",
-			"https://bsc-dataseed2.binance.org",
-			"https://bsc-dataseed3.binance.org",
-			"https://bsc-dataseed4.binance.org",
-		}
-	} else {
-		pf.urls = []string{
-			"https://data-seed-prebsc-1-s1.binance.org:8545",
-			"https://data-seed-prebsc-2-s1.binance.org:8545",
-			"https://data-seed-prebsc-1-s2.binance.org:8545",
-			"https://data-seed-prebsc-2-s2.binance.org:8545",
-			"https://data-seed-prebsc-1-s3.binance.org:8545",
-			"https://data-seed-prebsc-2-s3.binance.org:8545",
-		}
-	}
-
+func NewProxyFetcher(d *Downloader, rpcUrls []string) ProxyFetcher {
 	rand.Seed(time.Now().UnixNano())
-
-	return pf
+	return ProxyFetcher{d, rpcUrls, new(http.Client)}
 }
 
 func (pf ProxyFetcher) GetHeaderByHash(hash common.Hash) *types.Header {
