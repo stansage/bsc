@@ -402,20 +402,20 @@ func (t *freezerTable) Prune(number uint64) error {
 		return nil
 	}
 
-	for fnum := uint32(0); fnum < t.headId - 2; fnum++ {
-		file, exist := t.files[fnum]
-		if !exist {
-			continue
+	for fnum := uint32(1); fnum < t.headId - 2; fnum++ {
+		if file, exist := t.files[fnum]; exist {
+			if pos, err := file.Seek(0, io.SeekEnd); err != nil || pos != 0 {
+				file.Close()
+				file, err = openFreezerFileTruncated(file.Name())
+				if err == nil {
+					file.Close()
+				}
+				file, err = openFreezerFileForReadOnly(file.Name())
+				if err == nil {
+					t.files[fnum] = file
+				}
+			}
 		}
-
-		pos, err := file.Seek(0, io.SeekCurrent);
-		if err != nil || pos == 0 {
-			continue
-		}
-
-		t.releaseFile(fnum)
-		os.Remove(file.Name())
-		t.openFile(fnum, openFreezerFileForReadOnly)
 	}
 
 	return nil
