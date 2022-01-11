@@ -12,82 +12,43 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 )
 
-const vacuumDepth = 65536
-var lastVacuumNumber uint64
-
 func vacuum(bc *BlockChain) {
-	timer1 := time.NewTicker(3 * time.Minute)
-	timer2 := time.NewTicker(3 * time.Hour)
-	bc.wg.Add(1)
+	timer := time.NewTicker(3 * time.Minute)
 	defer func() {
 		bc.wg.Done()
-		timer1.Stop()
-		timer2.Stop()
+		timer.Stop()
 	}()
 	for {
 		select {
 		case <-bc.quit:
 			return
-		case <-timer1.C:
-			vacuumDiff(bc)
-			continue
-		case <-timer2.C:
-			vacuumFull(bc)
-			continue
+		case <-timer.C:
+			vacuumCleanDb(bc)
+			return
 		}
 	}
 }
 
-func vacuumDiff(bc *BlockChain) {
-	currentHeight := bc.hc.CurrentHeader().Number.Uint64()
-	if currentHeight < lastVacuumNumber + vacuumDepth + 1 {
-		return
-	}
+func vacuumCleanDb(bc *BlockChain) {
+	log.Info("Working vacuum cleaner")
+	
+	bc.db.PruneAncients()
+	batch := bc.db.NewBatch()
 
-	lp := uint64(0)
-	n := lastVacuumNumber + 1
-	if n == 1 {
-		n = currentHeight - 3 * vacuumDepth
-	}
-	lastVacuumNumber = currentHeight - vacuumDepth - 1
-	if lastVacuumNumber < n {
-		return
-	}
-
-	log.Info("Diff vacuum cleaner", "from", n, "to", lastVacuumNumber)
-
-	for n <= lastVacuumNumber {
-		hash := bc.GetCanonicalHash(n)
-		if hash != (common.Hash{}) {
-			cleanDatabase(bc, n, hash)
-		}
-		n++
-		percent := 100 * n / lastVacuumNumber
-		if percent != lp {
-			lp = percent
-			log.Info("Diff vacuum cleaner", "progress", percent)
-		}
-	}
-}
-
-func vacuumFull(bc *BlockChain) {
-	lp := uint64(0)
-	log.Info("Full vacuum cleaner", "from", 1, "to", lastVacuumNumber)
-
-	for n := uint64(1); n < lastVacuumNumber; n++ {
-		block := bc.GetBlockByNumber(n)
-		if block != nil {
-			for _, tx := range block.Transactions() {
-				rawdb.DeleteTxLookupEntry(bc.db, tx.Hash())
+	for _, prefix := range rawdb.KeyPrefixSet {
+		it := bc.db.NewIterator(prefix, nil)
+		for it.Next() {
+			if err := batch.Delete(it.Key()); err != nil {
+				log.Warn("Delete from db", "key", )
 			}
-			cleanDatabase(bc, n, block.Root())
 		}
-		percent := 100 * n / lastVacuumNumber
-		if percent != lp {
-			lp = percent
-			log.Info("Full vacuum cleaner", "progress", percent)
+		if err := batch.Write(); err != nil {
+			log.Error("Failed to clean", "err", err)
 		}
+		it.Release()
 	}
+
+	log.Info("Finished vacuum cleaner")
 }
 
 func cleanDatabase(bc *BlockChain, number uint64, hash common.Hash) {
@@ -131,6 +92,4 @@ func cleanDatabase(bc *BlockChain, number uint64, hash common.Hash) {
 	if err := batch.Write(); err != nil {
 		log.Error("Failed to delete", "number", number, "hash", hash)
 	}
-
-	bc.db.PruneAncient(number)
 }

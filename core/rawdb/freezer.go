@@ -257,23 +257,22 @@ func (f *freezer) TruncateAncients(items uint64) error {
 	return nil
 }
 
-func (f *freezer) PruneAncient(number uint64) error {
-	if err := f.tables[freezerHeaderTable].Prune(number); err != nil {
-		log.Error("Failed to prune ancient header", "number", number, "err", err)
-		return err
+func (f *freezer) PruneAncients() error {
+	tables := []string{
+		freezerHeaderTable,
+		freezerHashTable,
+		freezerBodiesTable,
+		freezerReceiptTable,
+		freezerDifficultyTable,
 	}
-	if err := f.tables[freezerBodiesTable].Prune(number); err != nil {
-		log.Error("Failed to prune ancient body", "number", number, "err", err)
-		return err
+	
+	for _, table := range tables {
+		if err := f.tables[table].Prune(); err != nil {
+			log.Error("Failed to prune ancient", "table", table, "err", err)
+			return err
+		}
 	}
-	if err := f.tables[freezerReceiptTable].Prune(number); err != nil {
-		log.Error("Failed to prune ancient receipts", "number", number, "err", err)
-		return err
-	}
-	if err := f.tables[freezerDifficultyTable].Prune(number); err != nil {
-		log.Error("Failed to prune ancient difficulty", "number", number, "err", err)
-		return err
-	}
+	
 	return nil
 }
 

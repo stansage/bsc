@@ -88,8 +88,8 @@ func (t *table) TruncateAncients(items uint64) error {
 
 // PruneAncient is a noop passthrough that just forwards the request to the underlying
 // database.
-func (t *table) PruneAncient(number uint64) error {
-	return t.db.PruneAncient(number)
+func (t *table) PruneAncients() error {
+	return t.db.PruneAncients()
 }
 
 // Sync is a noop passthrough that just forwards the request to the underlying

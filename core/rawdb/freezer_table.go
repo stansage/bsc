@@ -394,11 +394,11 @@ func (t *freezerTable) truncate(items uint64) error {
 }
 
 
-func (t *freezerTable) Prune(number uint64) error {
+func (t *freezerTable) Prune() error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	if atomic.LoadUint64(&t.items) <= number || t.headId < 2 {
+	if t.headId < 2 {
 		return nil
 	}
 

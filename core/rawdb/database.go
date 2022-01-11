@@ -127,7 +127,7 @@ func (db *nofreezedb) TruncateAncients(items uint64) error {
 	return errNotSupported
 }
 
-func (f *nofreezedb) PruneAncient(number uint64) error {
+func (f *nofreezedb) PruneAncients() error {
 	return errNotSupported
 }
 
