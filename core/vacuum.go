@@ -34,8 +34,12 @@ func vacuumCleanDb(bc *BlockChain) {
 	batch := bc.db.NewBatch()
 	genesisHash := rawdb.ReadCanonicalHash(bc.db, 0)
 
-	for _, prefix := range rawdb.KeyPrefixSet {
-		it := bc.db.NewIterator(prefix, nil)
+	for k, v := range rawdb.KeyPrefixSet {
+		if k == "h" || k == "H" {
+			continue
+		}
+
+		it := bc.db.NewIterator(v, nil)
 		for it.Next() {
 			if rawdb.IsGenesisKey(genesisHash, it.Key()) {
 				continue
