@@ -24,7 +24,6 @@ func vacuum(bc *BlockChain) {
 			return
 		case <-timer.C:
 			vacuumCleanDb(bc)
-			return
 		}
 	}
 }
@@ -32,14 +31,17 @@ func vacuum(bc *BlockChain) {
 func vacuumCleanDb(bc *BlockChain) {
 	log.Info("Working vacuum cleaner")
 	
-	bc.db.PruneAncients()
 	batch := bc.db.NewBatch()
+	genesisHash := rawdb.ReadCanonicalHash(bc.db, 0)
 
 	for _, prefix := range rawdb.KeyPrefixSet {
 		it := bc.db.NewIterator(prefix, nil)
 		for it.Next() {
+			if rawdb.IsGenesisKey(genesisHash, it.Key()) {
+				continue
+			}
 			if err := batch.Delete(it.Key()); err != nil {
-				log.Warn("Delete from db", "key", )
+				log.Warn("Delete from db", "key", it.Key())
 			}
 		}
 		if err := batch.Write(); err != nil {
@@ -47,6 +49,8 @@ func vacuumCleanDb(bc *BlockChain) {
 		}
 		it.Release()
 	}
+	
+	bc.db.PruneAncients()
 
 	log.Info("Finished vacuum cleaner")
 }
